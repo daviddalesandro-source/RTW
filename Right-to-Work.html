@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Right to Work (RTW) Requirements Dashboard</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --accent:#1d4ed8; --accent-d:#1e40af;
+    --yes:#dcfce7; --yes-ink:#166534; --no:#fee2e2; --no-ink:#991b1b;
+    --warn:#fef9c3; --warn-ink:#854d0e; --soft:#f8fafc;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:#eef2f7;font-size:14px;line-height:1.45}
+  header.top{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;padding:20px 24px}
+  header.top h1{margin:0;font-size:22px;letter-spacing:.2px}
+  header.top p{margin:6px 0 0;color:#cbd5e1;font-size:13px}
+  .updated{font-size:12px;color:#93c5fd;margin-top:8px}
+  .wrap{padding:18px 24px 60px}
+  .disclaimer{background:var(--warn);color:var(--warn-ink);border:1px solid #fde68a;
+       border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:16px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  .toolbar input[type=text], .toolbar select{
+       padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--ink)}
+  .toolbar input[type=text]{min-width:230px}
+  .spacer{flex:1 1 auto}
+  button{cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);
+       padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;transition:.15s}
+  button:hover{background:var(--soft)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-d)}
+  button.danger{color:#991b1b;border-color:#fecaca;background:#fff}
+  button.danger:hover{background:#fef2f2}
+  button.active{background:#16a34a;border-color:#16a34a;color:#fff}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:120px}
+  .stat .n{font-size:22px;font-weight:700}
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .editbar{display:none;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;
+       border-radius:8px;padding:9px 14px;font-size:12.5px;margin-bottom:12px}
+  body.editing .editbar{display:block}
+  .tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff;max-height:72vh}
+  table{border-collapse:separate;border-spacing:0;width:100%;min-width:1500px}
+  thead th{position:sticky;top:0;z-index:3;background:#f1f5f9;color:#334155;text-align:left;
+       font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;padding:10px 12px;
+       border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+  thead th:hover{background:#e2e8f0}
+  thead th .arrow{color:var(--accent);font-size:11px}
+  th.col-country,td.col-country{position:sticky;left:0;z-index:2;background:#fff;min-width:160px;
+       border-right:1px solid var(--line)}
+  thead th.col-country{z-index:4;background:#f1f5f9}
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+  tbody tr:nth-child(even) td{background:#fbfcfe}
+  tbody tr:nth-child(even) td.col-country{background:#fbfcfe}
+  tbody tr:hover td{background:#eff6ff}
+  tbody tr:hover td.col-country{background:#eff6ff}
+  .region-pill{display:inline-block;font-size:10.5px;background:#e0e7ff;color:#3730a3;
+       padding:2px 8px;border-radius:999px;margin-top:4px}
+  .day1{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .day1.Yes{background:var(--yes);color:var(--yes-ink)}
+  .day1.No{background:var(--no);color:var(--no-ink)}
+  .day1.empty{background:#e2e8f0;color:#64748b}
+  .empty-cell{color:#cbd5e1;font-style:italic}
+  .srcwrap{display:flex;flex-direction:column;gap:4px}
+  .srclink{color:var(--accent);font-size:12px;text-decoration:none;word-break:break-all}
+  .srclink:hover{text-decoration:underline}
+  td .col-source-w{min-width:240px}
+  /* edit-mode inputs */
+  td textarea, td input.cell, td select.cell{
+       width:100%;font-family:inherit;font-size:12.5px;border:1px solid #cbd5e1;border-radius:6px;
+       padding:6px 7px;background:#fffef7;color:var(--ink);resize:vertical}
+  td textarea{min-height:48px;line-height:1.4}
+  td input.cell{min-width:120px}
+  .delcol{width:38px;text-align:center}
+  .delbtn{border:none;background:none;color:#dc2626;font-size:16px;cursor:pointer;padding:2px 6px}
+  .footer{margin-top:18px;color:var(--muted);font-size:12px}
+  .hint{color:var(--muted);font-size:12px;margin-left:4px}
+  @media print{
+    header.top{background:#0f172a !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .toolbar,.editbar,.stats,.disclaimer .nope,.delcol{display:none !important}
+    .tablewrap{max-height:none;overflow:visible;border:none}
+    table{min-width:0;font-size:9px}
+    thead th{position:static}
+    td.col-country,th.col-country{position:static}
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Global Right to Work (RTW) Requirements Dashboard</h1>
+  <p>Per-country right-to-work check requirements across all markets. Editable template &mdash; enter your verified data and carry it anywhere.</p>
+  <div class="updated">Requirements last updated: <span id="meta-updated">not yet updated</span></div>
+</header>
+
+<div class="wrap">
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This dashboard is an information-management template only. All fields start blank by design.
+    Right-to-work and immigration laws change frequently and vary by jurisdiction &mdash; the data you enter here must be
+    verified with qualified local legal counsel before being relied upon. This tool does not constitute legal advice.
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search country or any field…" oninput="render()">
+    <select id="regionFilter" onchange="render()"></select>
+    <select id="day1Filter" onchange="render()">
+      <option value="">Day 1 check: all</option>
+      <option value="Yes">Day 1: Yes</option>
+      <option value="No">Day 1: No</option>
+      <option value="__empty">Day 1: not set</option>
+    </select>
+    <span class="spacer"></span>
+    <button id="editToggle" class="primary" onclick="toggleEdit()">✎ Update Requirements</button>
+    <button onclick="addCountry()">＋ Add Country</button>
+    <button onclick="downloadDashboard()">⬇ Download Dashboard (.html)</button>
+    <button onclick="exportCSV()">⬇ Export CSV (Excel)</button>
+    <button onclick="window.print()">🖨 Print / Save PDF</button>
+    <button class="danger" onclick="resetAll()">↺ Reset</button>
+  </div>
+
+  <div class="editbar">
+    <strong>Editing enabled.</strong> Click any cell to type. Changes save automatically in this browser.
+    To use your edits on another computer, click <em>Download Dashboard (.html)</em> &mdash; your data is baked into the file (no internet, installs, or extra files needed).
+  </div>
+
+  <div class="tablewrap">
+    <table id="tbl">
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    Showing <span id="count">0</span> countries. Click a column header to sort. &nbsp;|&nbsp;
+    Fields: Summary of Requirements · Day 1 Check (Yes/No) · How the check must be done (in person / virtual / hybrid) ·
+    Who owns the data · Who must store the data · Storage duration · Recertification timeline.
+  </div>
+</div>
+
+<!-- Embedded data store. The Download button rewrites this block so the data travels with the file. -->
+<script id="rtw-data" type="application/json">
+{"updated":"2026-05-29 (initial fill from official portals — verify before reliance)","countries":[
+{"name":"Canada","region":"North America","summary":"No single 'right to work check' statute, but employers must ensure each worker is a citizen, permanent resident, or holds a valid work permit. Employers must ask to see and record the Social Insurance Number (SIN); a SIN beginning with 9 is held by a temporary resident and carries an expiry tied to the work permit.","day1":"Yes","how":"Documentary (in person or virtual). Within 3 days of the employee starting, view the SIN (card/letter) and, for 9-series SINs, the underlying work permit, and confirm it is unexpired. Service Canada provides no employer online-verification portal; checks are document-based.","owner":"Employer — the hiring entity (HR/payroll).","storer":"Employer — SIN and authorisation details held in HR/payroll records.","storage":"Employment/payroll records generally retained 6 years (Canada Revenue Agency).","recert":"Re-verify before a work permit / 9-series SIN expiry; do not employ past expiry without renewal.","sources":"https://www.canada.ca/en/employment-social-development/services/sin/reports/sin-employers.html https://www.canada.ca/en/immigration-refugees-citizenship.html"},
+{"name":"United States","region":"North America","summary":"Form I-9 (Employment Eligibility Verification) is mandatory for every employee. The employee completes Section 1 by their first day; the employer completes Section 2 (examining identity & work-authorisation documents) within 3 business days of the start date. E-Verify is required for federal contractors and in several states.","day1":"Yes","how":"Hybrid. Default is in-person physical examination of original documents. E-Verify employers in good standing may use the DHS alternative procedure: examine copies and conduct a live video interaction with the employee (remote). Anti-discrimination rules forbid dictating which acceptable documents the worker presents.","owner":"Employer — the hiring entity (HR).","storer":"Employer — retains Form I-9 (plus document copies if remote/E-Verify procedure used), ideally stored separately from personnel files.","storage":"Retain for 3 years after the date of hire OR 1 year after employment ends, whichever is later.","recert":"Reverify time-limited work authorisation on/before expiry via Supplement B (formerly Section 3). Do not reverify US citizens or LPR green cards.","sources":"https://www.uscis.gov/i-9 https://www.e-verify.gov"},
+{"name":"Puerto Rico","region":"North America","summary":"A US territory — US federal immigration law applies. Form I-9 is required for all employees exactly as on the mainland, and federal E-Verify obligations apply. Local labour law adds record-keeping duties but does not replace the I-9.","day1":"Yes","how":"Hybrid — identical to the US: in-person physical document examination, or the DHS remote alternative procedure (copies + live video) for E-Verify employers in good standing.","owner":"Employer — the hiring entity (HR).","storer":"Employer — retains Form I-9 separately from personnel files.","storage":"Federal I-9 rule: 3 years after hire or 1 year after termination, whichever is later (PR labour records often kept longer).","recert":"Reverify time-limited authorisation before expiry via Supplement B; citizens/LPRs not reverified.","sources":"https://www.uscis.gov/i-9 https://www.e-verify.gov"},
+{"name":"Austria","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement — identity/nationality check only. Third-country nationals need a residence title permitting work (e.g. Red-White-Red Card) before starting. Per the EU Employer Sanctions Directive, the employer must verify the permit, keep a copy for the duration of employment, and register the job with social security.","day1":"Yes","how":"Documentary check before start: verify the original residence/work title and ID and keep a copy (electronic accepted). Employment is registered via AMS/ÖGK; no UK-style certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy on file for the labour inspectorate (Finanzpolizei/AMS).","storage":"At least the duration of employment (Directive minimum); Austrian payroll/records commonly kept 7 years.","recert":"Re-verify before the residence title expires.","sources":"https://www.migration.gv.at https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Belgium","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check only). Third-country nationals need a single permit (work + residence), granted by the Region (Flanders/Wallonia/Brussels). Employer must verify the permit before start and keep it available, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the single-permit/residence card and ID and retain a copy. Employment declared to social security via Dimona. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the social/labour inspectorate.","storage":"At least the duration of employment (Directive minimum); Belgian social records commonly kept 5 years.","recert":"Re-verify before the single permit/residence card expires.","sources":"https://dofi.ibz.be https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Bulgaria","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a work-authorisation/single permit and residence before start. Employer must verify and keep a copy and notify the authorities, per the EU Employer Sanctions Directive (transposed into Bulgarian law).","day1":"Yes","how":"Documentary check before start: verify the permit/residence and ID and retain a copy. Employment registered with the National Revenue Agency; no certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate.","storage":"At least the duration of employment (Directive minimum); Bulgarian records commonly kept 5+ years.","recert":"Re-verify before the permit/residence expires.","sources":"https://www.mlsp.government.bg https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Croatia","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a residence-and-work permit before start. Employer must verify and retain a copy and report the hire, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the residence-and-work permit and ID and keep a copy. Permits handled by the Ministry of Interior (MUP). No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate.","storage":"At least the duration of employment (Directive minimum); national records commonly kept longer.","recert":"Re-verify before the residence-and-work permit expires.","sources":"https://mup.gov.hr https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Cyprus","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need an employment/residence permit before start. Employer must verify and keep a copy and notify the authorities, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the permit/residence (Civil Registry & Migration Dept) and ID and retain a copy. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate.","storage":"At least the duration of employment (Directive minimum); national records commonly kept longer.","recert":"Re-verify before the permit/residence expires.","sources":"https://www.moi.gov.cy https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Czech Republic","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need an employee card / blue card / work permit before start. Employer must verify, keep copies for the duration of employment, and notify the Labour Office, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the employee card/permit and ID and keep a copy. Employer notifies the Labour Office (Úřad práce). No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copies held for the Labour Office/inspectorate.","storage":"Copies kept for the duration of employment and commonly 3 years afterwards (Czech law).","recert":"Re-verify before the employee card/permit expires.","sources":"https://www.mvcr.cz https://www.mpsv.cz https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Denmark","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; EU registration certificate for longer stays). Third-country nationals need a residence & work permit before start. Employer must verify and keep documentation, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the residence-and-work permit and ID and retain a copy. Permits via SIRI/nyidanmark. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — documentation held for inspection (SIRI/police).","storage":"At least the duration of employment; copy of the residence permit must be kept while the person is employed.","recert":"Re-verify before the residence-and-work permit expires.","sources":"https://www.nyidanmark.dk https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Finland","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; registration for longer stays). Third-country nationals need a residence permit for work before start. Employer must ensure the worker holds the right permit and keep information on it available, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the residence permit (for an employed person) and ID and retain the details. Migri (Finnish Immigration Service) issues permits. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — keeps the permit details/grounds available for inspection.","storage":"Information kept for the duration of employment and 4 years after it ends (Finnish Aliens Act).","recert":"Re-verify before the residence permit expires.","sources":"https://migri.fi https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"France","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a residence/work authorisation before start. The employer must verify the authorisation with the prefecture at least 2 working days before hiring, declare the hire (DPAE to URSSAF), and keep a copy, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary + pre-employment authentication. Submit the foreign worker's residence document to the prefecture (online) at least 2 working days before the start to confirm validity; keep a copy; complete the DPAE. No certified UK-style digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy of the authorisation held for the labour inspectorate (and URSSAF).","storage":"Copy kept for the duration of employment; payroll/personnel records commonly retained up to 5 years.","recert":"Re-verify before the residence/work authorisation expires.","sources":"https://administration-etrangers-en-france.interieur.gouv.fr https://www.service-public.fr https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Germany","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a residence title that permits employment (e.g. EU Blue Card, work visa) before start. Employer must check the title permits the work, keep a copy for the duration of employment, and not employ without it (AufenthG/BeschV).","day1":"Yes","how":"Documentary check before start: verify the residence title/supplementary sheet (Zusatzblatt) shows permission to work, plus ID, and keep a copy. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy of the residence title held in the personnel file for inspection.","storage":"Copy kept for the duration of employment (and produced to authorities on request).","recert":"Re-verify before the residence title's expiry / work-permission end date.","sources":"https://www.make-it-in-germany.com https://www.bamf.de https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Greece","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a residence permit for work before start. Employer must verify and keep a copy and notify the authorities, per the EU Employer Sanctions Directive (transposed into Greek law).","day1":"Yes","how":"Documentary check before start: verify the residence permit for employment and ID and retain a copy. Permits via the Ministry of Migration & Asylum. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate (SEPE).","storage":"At least the duration of employment (Directive minimum); national records commonly kept longer.","recert":"Re-verify before the residence permit expires.","sources":"https://migration.gov.gr https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Hungary","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; registration). Third-country nationals need a residence permit for employment / single permit before start. Employer must verify, keep a copy for the duration of employment, and report the hire, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the single/residence permit and ID and keep a copy. Administered by the National Directorate-General for Aliens Policing. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour/immigration inspectorate.","storage":"Copy kept for the duration of employment (Hungarian transposition of the Directive).","recert":"Re-verify before the residence/single permit expires.","sources":"https://oif.gov.hu https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Israel","region":"Middle East","summary":"Foreign nationals need a work visa/permit (B/1) arranged via an employer permit from the Population & Immigration Authority (PIBA) before working. Sectoral quotas, levies and bank-guarantee/deposit rules apply. Citizens/residents evidenced by national ID (Teudat Zehut).","day1":"Yes","how":"Documentary, in person. Employer (as permit holder) verifies the worker's B/1 visa/permit and passport before work; for locals, the Teudat Zehut. No central online employer-verification portal.","owner":"Employer/permit holder (HR).","storer":"Employer — visa, permit and passport copies in the personnel file.","storage":"Employment records commonly retained 7 years (tax/labour); immigration copies for the engagement's duration.","recert":"Re-verify before the work visa/permit expiry; renew within quota.","sources":"https://www.gov.il/en/departments/population_and_immigration_authority https://www.google.com/search?q=Israel+work+visa+B1+employer+requirements"},
+{"name":"Italy","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a work authorisation (nulla osta, within the Decreto Flussi quota) and residence permit (permesso di soggiorno) before start. Employer signs the residence contract (contratto di soggiorno), verifies documents and keeps copies, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the nulla osta, permesso di soggiorno and ID and keep copies; communicate the hire (Comunicazione Obbligatoria/UNILAV). No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copies held for the labour inspectorate (INL).","storage":"At least the duration of employment (Directive minimum); Italian records commonly kept 5+ years.","recert":"Re-verify before the permesso di soggiorno expires.","sources":"https://www.interno.gov.it https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Latvia","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; registration). Third-country nationals need a residence permit with employment rights before start. Employer must verify and keep a copy and notify the authorities, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the residence permit (OCMA/PMLP) and ID and retain a copy. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate.","storage":"At least the duration of employment (Directive minimum); national records commonly kept longer.","recert":"Re-verify before the residence permit expires.","sources":"https://www.pmlp.gov.lv https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Malta","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a single permit (work + residence) before start. Employer must verify and keep a copy and notify the authorities, per the EU Employer Sanctions Directive; processed via Identità/Jobsplus.","day1":"Yes","how":"Documentary check before start: verify the single permit and ID and keep a copy; engagement reported to Jobsplus. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour/immigration inspectorate.","storage":"At least the duration of employment (Directive minimum); national records commonly kept longer.","recert":"Re-verify before the single permit expires.","sources":"https://homeaffairs.gov.mt https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Netherlands","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a work/residence permit (TWV, GVVA single permit, or highly-skilled-migrant residence) before start. Under the Wav, the employer must verify the original ID, confirm work entitlement and keep a copy of the ID document.","day1":"Yes","how":"Documentary check before start: verify the original identity document (not a driving licence), confirm work rights, and keep a copy in the records. IND handles permits; recognised sponsors for highly-skilled migrants. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy of the ID document held in the administration.","storage":"Copy retained until at least 5 years after the end of employment (Wav).","recert":"Re-verify before the permit/residence document expires.","sources":"https://ind.nl https://www.uwv.nl https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Norway","region":"Europe","summary":"EEA/EU & Swiss nationals: free movement (registration). Third-country nationals need a residence permit for work before start. Employer must ensure a valid permit exists; the worker generally must not begin until it is granted (UDI). EEA Employer Sanctions equivalents apply.","day1":"Yes","how":"Documentary check before start: verify the residence permit/registration and ID and keep a copy. UDI issues permits. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the Labour Inspection Authority.","storage":"At least the duration of employment; payroll/personnel records commonly kept 5 years.","recert":"Re-verify before the residence/work permit expires.","sources":"https://www.udi.no https://www.arbeidstilsynet.no"},
+{"name":"Poland","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a work permit / single permit (or a declaration of entrustment for certain nationalities) and a legal residence basis before start. Employer must verify the legal residence document and keep a copy for the duration of employment.","day1":"Yes","how":"Documentary check before start: verify the residence document and work permit/declaration and ID and keep a copy. Administered by Voivodeship offices / Office for Foreigners (UDSC). No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy of the residence document held in the records.","storage":"Copy kept for the duration of employment (Polish transposition of the Directive).","recert":"Re-verify before the residence document / work permit expires.","sources":"https://www.gov.pl/web/udsc https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Portugal","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; registration). Third-country nationals need a residence visa/permit allowing work before start. Employer must verify and keep documentation; immigration handled by AIMA (which replaced SEF in 2023). EU Employer Sanctions Directive applies.","day1":"Yes","how":"Documentary check before start: verify the residence permit/visa and ID and keep a copy; report the hire to Social Security and the labour authority (ACT). No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate (ACT).","storage":"At least the duration of employment (Directive minimum); Portuguese records commonly kept 5+ years.","recert":"Re-verify before the residence permit/visa expires.","sources":"https://aima.gov.pt https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Romania","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; registration). Third-country nationals need a work authorisation and long-stay visa/residence permit before start. Employer must verify and keep a copy and report the hire, per the EU Employer Sanctions Directive; administered by the General Inspectorate for Immigration (IGI).","day1":"Yes","how":"Documentary check before start: verify the work authorisation and residence permit and ID and keep a copy; register the contract in REVISAL. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate.","storage":"At least the duration of employment (Directive minimum); national records commonly kept longer.","recert":"Re-verify before the residence permit/authorisation expires.","sources":"https://igi.mai.gov.ro https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Slovakia","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; registration). Third-country nationals need a residence permit for work / single permit before start. Employer must verify, keep a copy for the duration of employment, and notify the Labour Office, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the residence/single permit and ID and keep a copy; notify the Labour Office (ÚPSVR). No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate.","storage":"Copy kept for the duration of employment (Slovak transposition of the Directive).","recert":"Re-verify before the residence/single permit expires.","sources":"https://www.minv.sk https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Slovenia","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check; registration). Third-country nationals need a single permit (work + residence) before start. Employer must verify and keep a copy and report the hire, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the single permit and ID and keep a copy; report the hire to the Employment Service (ZRSZ) / authorities. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour inspectorate.","storage":"At least the duration of employment (Directive minimum); national records commonly kept longer.","recert":"Re-verify before the single permit expires.","sources":"https://www.gov.si https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Spain","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (NIE/registration). Third-country nationals need a work-and-residence authorisation before start; the employer is usually the applicant. Employer must verify and register the worker with Social Security before commencement, per the EU Employer Sanctions Directive.","day1":"Yes","how":"Documentary check before start: verify the work-and-residence authorisation (TIE) and passport and keep a copy; register (alta) with Social Security before the worker starts. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the labour & social-security inspectorate (ITSS).","storage":"At least the duration of employment (Directive minimum); Spanish records commonly kept 4+ years.","recert":"Re-verify before the work-and-residence authorisation expires.","sources":"https://extranjeros.inclusion.gob.es https://immigration-portal.ec.europa.eu https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Sweden","region":"Europe","summary":"EU/EEA & Swiss nationals: free movement (ID check). Third-country nationals need a work permit before start. The employer must keep a copy of the document showing the worker's right to be in Sweden, and notify the Swedish Tax Agency (Skatteverket) of the employment of a third-country national.","day1":"Yes","how":"Documentary check before start: verify the work/residence permit and ID, keep a copy, and notify Skatteverket. Migrationsverket issues permits. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy of the right-to-stay document held in the records.","storage":"Copy kept at least 12 months after the employment ends (Swedish rules).","recert":"Re-verify before the work permit expires; permit extensions must be applied for before expiry.","sources":"https://www.migrationsverket.se https://www.skatteverket.se https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=celex:32009L0052"},
+{"name":"Switzerland","region":"Europe","summary":"EU/EFTA nationals: bilateral free movement (registration; permit for longer stays). Third-country nationals are subject to quotas and need a work/residence permit before start, with the employer typically applying to the cantonal authorities and SEM. Employer must ensure a valid permit before employment.","day1":"Yes","how":"Documentary check before start: verify the permit (L/B/C / EU-EFTA registration) and ID and keep a copy; register with the cantonal authorities. No certified digital-ID scheme.","owner":"Employer (HR) — hiring legal entity.","storer":"Employer — copy held for the cantonal labour/migration authorities.","storage":"At least the duration of employment; Swiss payroll/records commonly kept 10 years.","recert":"Re-verify before the permit expires (L/B permits are time-limited).","sources":"https://www.sem.admin.ch https://www.ch.ch/en/work"},
+{"name":"UK (England & Wales)","region":"Europe","summary":"The most formal RTW regime. A right-to-work check must be completed before employment begins to obtain a 'statutory excuse' against a civil penalty (up to £45,000 per illegal worker for a first breach, £60,000 for repeat breaches from Feb 2024).","day1":"Yes","how":"Hybrid — three routes: (1) manual in-person check of acceptable original documents (copied while the holder is present); (2) Home Office online check using the individual's share code (for eVisa/holders of digital status — not available to British/Irish citizens); (3) IDVT via a certified Identity Service Provider for British/Irish citizens with a valid passport (digital identity verification).","owner":"Employer — the hiring entity (HR).","storer":"Employer — retains a clear copy/record of the check (and the share-code/IDVT output).","storage":"Keep for the full duration of employment and for 2 years after employment ends.","recert":"For time-limited permission, a follow-up check is required before the permission expires to maintain the statutory excuse.","sources":"https://www.gov.uk/check-job-applicant-right-to-work https://www.gov.uk/government/publications/right-to-work-checks-employers-guide"},
+{"name":"Turkey","region":"Eurasia & Eastern Europe","summary":"Foreign nationals generally need a work permit (which doubles as a residence permit) granted by the Ministry of Labour and Social Security before working; the employer applies. Citizens evidenced by the Turkish ID. Work permits are tied to a specific employer and role.","day1":"Yes","how":"Documentary, online application + in-person onboarding. Employer applies via the e-Devlet/Ministry e-permit system and verifies the issued work permit and passport before start. No employer self-service eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit and passport copies in the personnel file.","storage":"Employment records commonly retained up to 10 years (tax/social security); immigration copies for the engagement.","recert":"Re-verify before the work permit expires; renewal applications typically within ~60 days before expiry.","sources":"https://www.csgb.gov.tr https://www.turkiye.gov.tr"},
+{"name":"Australia","region":"Asia-Pacific","summary":"Employers must ensure every worker is an Australian citizen, permanent resident, or holds a visa with work rights before they start. Allowing an unlawful non-citizen — or a visa holder to work in breach of conditions — is an offence under the Migration Act with civil and criminal penalties.","day1":"Yes","how":"Virtual/online. Verify non-citizens' work rights through VEVO (Visa Entitlement Verification Online) — a free Home Affairs portal — using passport/document details (with the holder's consent). Citizens/PRs evidenced by passport, citizenship or PR documents.","owner":"Employer — the hiring entity (HR).","storer":"Employer — retain VEVO results and visa/work-rights evidence.","storage":"Keep records showing a check was done; Fair Work employee records must be kept 7 years.","recert":"Re-check via VEVO before a visa's expiry or condition change; VEVO can email expiry alerts.","sources":"https://immi.homeaffairs.gov.au https://www.fairwork.gov.au"},
+{"name":"India","region":"Asia-Pacific","summary":"No I-9-style check for citizens. Foreign nationals must hold an Employment Visa (tied to a sponsoring employer and a minimum salary threshold) and register with the FRRO/FRO if staying beyond 180 days, before joining. The sponsoring employer verifies the visa and registration.","day1":"Yes","how":"Documentary, in person. Verify passport, Employment Visa and FRRO registration; for Indian citizens, standard onboarding ID/KYC. No central online work-eligibility portal.","owner":"Employer/sponsor (HR).","storer":"Employer — visa, FRRO and passport copies in the personnel file.","storage":"Company-law/labour records commonly retained 5–8 years; immigration copies for the engagement's duration.","recert":"Re-verify before Employment Visa / FRRO registration expiry (visas typically 1–5 years).","sources":"https://indianfrro.gov.in/frro https://boi.gov.in"},
+{"name":"Bangladesh","region":"Asia-Pacific","summary":"Foreign nationals need an employment (E) visa plus a work permit from BIDA (industrial/commercial) or relevant authority before working; the employing entity sponsors. No formal employer right-to-work check regime for nationals.","day1":"Yes","how":"Documentary, in person. Employer verifies the E-visa, work permit and passport before start. No employer online-verification portal.","owner":"Employer/sponsor (HR).","storer":"Employer — visa, work-permit and passport copies in the personnel file.","storage":"Employment/company records commonly retained ~6 years; immigration copies for the engagement.","recert":"Re-verify before visa / work-permit expiry (typically annual renewal).","sources":"https://bida.gov.bd https://www.dip.gov.bd"},
+{"name":"Cambodia","region":"Asia-Pacific","summary":"Foreign employees require a work permit and employment card from the Ministry of Labour (issued via the online FWCMS system), renewed annually, before working; employers must also file an annual foreign-worker quota. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer registers and applies for the work permit/employment card via FWCMS and verifies the worker's passport/visa. No employer eligibility-check portal beyond FWCMS records.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, employment card and passport copies in the personnel file.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Renew the work permit/employment card annually (by the statutory deadline each year).","sources":"https://fwcms.mlvt.gov.kh https://www.mlvt.gov.kh"},
+{"name":"China","region":"Asia-Pacific","summary":"Foreign nationals need a Work Permit (Foreigner's Work Permit Notice, then card) and work-type (Z) visa converted to a work-type residence permit before working; the employer sponsors. Work is unlawful without it. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online application. Employer applies through the foreigner work-permit system, then the worker obtains the Z visa and residence permit; employer verifies the work permit, residence permit and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence permit and passport copies in the personnel file.","storage":"Employment/tax records commonly retained ~10 years; immigration copies for the engagement.","recert":"Re-verify before the work permit / work-type residence permit expires (often annual).","sources":"https://www.gov.cn https://www.google.com/search?q=China+foreigner+work+permit+employer+requirements"},
+{"name":"Hong Kong","region":"Asia-Pacific","summary":"Employers must not employ anyone not lawfully employable. Foreign nationals need an employment visa (e.g. GEP, Top Talent) sponsored by the employer before working. It is an offence to employ a person not lawfully employable, with checking duties on the employer.","day1":"Yes","how":"Documentary, in person. Inspect the employee's HK ID card; for non-permanent residents, also inspect the valid travel document and the employment visa/limit-of-stay condition. Immigration Department issues visas.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — copies of HKID / travel document and visa in the personnel file.","storage":"Employment records commonly retained ~7 years; immigration copies for the engagement.","recert":"Re-verify before the employment visa / limit of stay expires.","sources":"https://www.immd.gov.hk https://www.gov.hk"},
+{"name":"Indonesia","region":"Asia-Pacific","summary":"Foreign workers (TKA) need an approved RPTKA (foreign manpower utilisation plan), notification, and a limited-stay permit (ITAS) before working; the employer sponsors and pays the DKPTKA levy. Each foreign worker must have a local counterpart and defined position. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer obtains RPTKA approval and notification via the Ministry of Manpower online system, then ITAS via immigration; verifies passport, ITAS and work documents before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — RPTKA, notification, ITAS and passport copies in the personnel file.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the notification/ITAS expires (typically annual renewal).","sources":"https://tka-online.kemnaker.go.id https://www.imigrasi.go.id"},
+{"name":"Japan","region":"Asia-Pacific","summary":"Foreign nationals need a status of residence permitting the specific work (e.g. Engineer/Specialist in Humanities) before working; the employer verifies the residence card. Employers must submit a 'Notification of Employment of Foreign Nationals' to Hello Work. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary, in person. Inspect the Residence Card (front and back) to confirm the status of residence permits the work and the period of stay; check the passport. Notify Hello Work on hire and separation.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — copies of the residence card and passport in the personnel file.","storage":"Labour records (e.g. worker rosters) generally retained 5 years; immigration copies for the engagement.","recert":"Re-verify before the period of stay expires; confirm status changes when duties change.","sources":"https://www.isa.go.jp/en https://www.mhlw.go.jp"},
+{"name":"Korea","region":"Asia-Pacific","summary":"South Korea: foreign nationals need a visa/status of stay permitting the work (e.g. E-7 specialist) and an Alien Registration Card before working; the employer typically sponsors and may need to report the employment to immigration. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary, in person. Verify the Alien Registration Card and visa status (work permitted), and the passport, before start; certain changes require reporting to the Korea Immigration Service. ","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — ARC, visa and passport copies in the personnel file.","storage":"Labour records generally retained ~3 years; immigration copies for the engagement.","recert":"Re-verify before the status of stay / ARC expires; renew before expiry.","sources":"https://www.immigration.go.kr https://www.hikorea.go.kr"},
+{"name":"Sri Lanka","region":"Asia-Pacific","summary":"Foreign nationals need a residence visa with employment approval (often via BOI for approved enterprises) before working; the employing entity sponsors. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary, in person. Employer verifies the residence/employment visa and passport before start; approvals via the Department of Immigration & Emigration / BOI. No employer online-verification portal.","owner":"Employer/sponsor (HR).","storer":"Employer — visa and passport copies in the personnel file.","storage":"Employment/company records commonly retained ~6 years; immigration copies for the engagement.","recert":"Re-verify before the residence/employment visa expires (typically annual).","sources":"https://www.immigration.gov.lk https://investsrilanka.com"},
+{"name":"Mongolia","region":"Asia-Pacific","summary":"Foreign nationals need a work permit (Ministry of Labour) within quota and a residence permit/work visa (HG) before working; the employer sponsors and pays a workplace fee. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary, in person. Employer obtains the work permit and residence permit and verifies the passport/visa before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence permit and passport copies in the personnel file.","storage":"Employment/company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work and residence permits expire (typically annual renewal).","sources":"https://immigration.gov.mn https://www.google.com/search?q=Mongolia+work+permit+employer+requirements"},
+{"name":"Myanmar","region":"Asia-Pacific","summary":"Foreign nationals need a business/employment visa and, in regulated/SEZ contexts, work-permit approvals before working; the employer sponsors. Regulatory practice is fluid — verify current requirements. No nationals' RTW-check regime.","day1":"Conditional","how":"Documentary, in person. Employer verifies the visa and any work-permit/stay documents and passport before start. No employer online-verification portal; requirements vary by sector and current policy.","owner":"Employer/sponsor (HR).","storer":"Employer — visa and passport copies in the personnel file.","storage":"Company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before visa / stay-permit expiry.","sources":"https://www.mip.gov.mm https://www.google.com/search?q=Myanmar+work+permit+employment+visa+requirements"},
+{"name":"Malaysia","region":"Asia-Pacific","summary":"Foreign nationals need an approved Employment Pass / work pass (via the Expatriate Services Division or relevant authority) tied to the employer before working; quota and category rules apply. It is an offence to employ a person without a valid pass. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer registers with ESD, obtains the pass approval, and verifies the Employment Pass endorsement and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — pass and passport copies in the personnel file.","storage":"Employment/company records commonly retained ~7 years; immigration copies for the engagement.","recert":"Re-verify before the Employment Pass expires (typically 1–2 years); renew before expiry.","sources":"https://esd.imi.gov.my https://www.imi.gov.my"},
+{"name":"New Zealand","region":"Asia-Pacific","summary":"Employers may only employ people entitled to work in NZ (citizens, residents, or a valid work visa). Employing someone not entitled to work is an offence; accredited-employer obligations apply for many work visas.","day1":"Yes","how":"Virtual/online. Use VisaView (Immigration NZ online) to confirm a non-citizen's visa work entitlements; verify passport/visa. Citizens/residents evidenced by passport or residence documents.","owner":"Employer — the hiring entity (HR).","storer":"Employer — retain VisaView confirmation and visa evidence.","storage":"Wage/time and employment records must be kept 7 years (Employment Relations / Holidays Act).","recert":"Re-check via VisaView before a work visa expires or conditions change.","sources":"https://www.immigration.govt.nz https://www.employment.govt.nz"},
+{"name":"Philippines","region":"Asia-Pacific","summary":"Foreign nationals generally need an Alien Employment Permit (AEP) from DOLE plus a 9(g) work visa from the Bureau of Immigration before working; the employer sponsors. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the AEP (DOLE) and 9(g) visa (BI) and verifies the passport/visa before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — AEP, visa and passport copies in the personnel file.","storage":"Labour/company records commonly retained ~3–10 years; immigration copies for the engagement.","recert":"Re-verify before the AEP / 9(g) visa expires (AEP typically valid 1–3 years).","sources":"https://www.dole.gov.ph https://immigration.gov.ph"},
+{"name":"Singapore","region":"Asia-Pacific","summary":"Foreign employees need a valid work pass (Employment Pass, S Pass, Work Permit) issued by the Ministry of Manpower (MOM) before working; the employer applies and is responsible. It is an offence to employ a foreigner without a valid pass; employers must verify pass validity.","day1":"Yes","how":"Virtual/online. Employer applies via MOM's EP Online / WP Online, and can verify pass status and validity online; check passport and the in-principle approval/pass. Citizens/PRs evidenced by NRIC.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — pass records and passport copies; MOM holds pass data.","storage":"Employment records under the Employment Act generally kept ~2 years for current and 1 year after leaving; immigration copies for the engagement.","recert":"Re-verify before the work pass expires; renew via MOM before expiry.","sources":"https://www.mom.gov.sg https://www.mom.gov.sg/passes-and-permits"},
+{"name":"Taiwan","region":"Asia-Pacific","summary":"Foreign professionals need a work permit from the Ministry of Labor (Workforce Development Agency) plus a resident visa and ARC before working; the employer applies. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer applies for the work permit via the WDA system, then the worker obtains the resident visa and ARC; employer verifies the work permit, ARC and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, ARC and passport copies in the personnel file.","storage":"Labour/company records commonly retained ~5 years; immigration copies for the engagement.","recert":"Re-verify before the work permit / ARC expires (often up to 3 years); renew before expiry.","sources":"https://www.wda.gov.tw https://www.immigration.gov.tw"},
+{"name":"Thailand","region":"Asia-Pacific","summary":"Foreign nationals need a Non-Immigrant visa (usually B) and a work permit from the Department of Employment before working; the employer sponsors and must meet capital/Thai-staff ratios. Working without a permit is an offence for both worker and employer. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer arranges the work permit (or Digital Work Permit) and verifies the visa, work permit and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, visa and passport copies in the personnel file.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / visa expires (typically annual); renew before expiry.","sources":"https://www.doe.go.th https://www.immigration.go.th"},
+{"name":"Vietnam","region":"Asia-Pacific","summary":"Foreign workers generally need a work permit (or confirmation of exemption) from the labour authority (DOLISA/MOLISA) plus a work visa/temporary residence card before working; the employer sponsors and must justify the need. Working without a permit is unlawful. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains approval of the demand for foreign workers, then the work permit, and verifies the permit, visa/TRC and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, visa/TRC and passport copies in the personnel file.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit expires (max 2 years); renew/re-issue before expiry.","sources":"https://www.molisa.gov.vn https://www.google.com/search?q=Vietnam+work+permit+employer+requirements"},
+{"name":"Pakistan","region":"Asia-Pacific","summary":"Foreign nationals need a work visa and, for many, BOI/sector approvals before working; the employing entity sponsors. No formal nationals' RTW-check regime; CNIC evidences citizens.","day1":"Conditional","how":"Documentary, in person. Employer verifies the work visa and passport (and any BOI approval) before start. No employer online-verification portal; requirements vary by sector.","owner":"Employer/sponsor (HR).","storer":"Employer — visa and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work visa expires.","sources":"https://invest.gov.pk https://dgip.gov.pk"},
+{"name":"Armenia","region":"Eurasia & Eastern Europe","summary":"Foreign nationals generally need a work permit (with exemptions for certain categories) and a residence status before working; the employer applies to the Migration Service. No formal nationals' RTW-check regime.","day1":"Conditional","how":"Documentary, in person. Employer verifies the work permit (where required) and residence/passport before start. Exemptions exist (e.g. certain residence-permit holders, EAEU nationals).","owner":"Employer/sponsor (HR).","storer":"Employer — permit/residence and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / residence status expires.","sources":"https://www.migration.am https://www.google.com/search?q=Armenia+work+permit+employer+requirements"},
+{"name":"Azerbaijan","region":"Eurasia & Eastern Europe","summary":"Foreign nationals need an individual work permit from the State Migration Service plus a temporary-residence permit before working; the employer applies within quota. Working without a permit is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit and verifies the temporary-residence permit and passport before start (often via the SMS 'e-gov'/migration portal).","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence permit and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / residence permit expires (typically annual); renew before expiry.","sources":"https://www.migration.gov.az https://www.google.com/search?q=Azerbaijan+work+permit+employer+requirements"},
+{"name":"Bosnia and Herzegovina","region":"Eurasia & Eastern Europe","summary":"Foreign nationals need a work permit and temporary-residence approval before working; the employer applies within an annual quota set by the entity authorities. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit and verifies the residence approval and passport before start. No employer online-verification portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work and residence permits expire (typically annual).","sources":"https://www.sps.gov.ba https://www.google.com/search?q=Bosnia+work+permit+employer+requirements"},
+{"name":"Belarus","region":"Eurasia & Eastern Europe","summary":"Foreign nationals generally need a special work permit (for the employer) and a permit to engage foreign labour where thresholds apply, plus a temporary-residence basis, before working. EAEU nationals (e.g. Russia, Kazakhstan) are largely exempt. No nationals' RTW-check regime.","day1":"Conditional","how":"Documentary + application. Employer obtains the special work permit (where required) and verifies residence registration and passport before start. Exemptions for EAEU nationals.","owner":"Employer/sponsor (HR).","storer":"Employer — permit and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / residence basis expires (typically annual).","sources":"https://www.mvd.gov.by https://www.google.com/search?q=Belarus+work+permit+employer+requirements"},
+{"name":"Colombia","region":"Latin America & Caribbean","summary":"Foreign nationals need a work-authorising visa (e.g. Migrant 'M' or Visitor 'V' work visa) from the Ministry of Foreign Affairs and registration of the foreigner (Cédula de Extranjería) before working; the employer must report hires/terminations of foreigners to Migración Colombia via the SIRE/RUTEC systems.","day1":"Yes","how":"Documentary + online reporting. Employer verifies the work visa and Cédula de Extranjería and passport before start, and reports the foreign hire to Migración Colombia (SIRE) and RUTEC. No employer eligibility-check portal.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — visa, cédula and passport copies; reporting records in SIRE/RUTEC.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work visa expires; report changes to Migración Colombia.","sources":"https://www.cancilleria.gov.co https://www.migracioncolombia.gov.co"},
+{"name":"Dubai (UAE)","region":"Middle East","summary":"Sponsorship-based system. Foreign nationals need an employer-sponsored work permit (MoHRE) and residence visa with a work-permitting status before working; mainland vs free-zone (e.g. DMCC, DIFC) rules differ. Working outside the sponsoring entity/role is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer (sponsor) processes the work permit and Emirates ID/residence visa via MoHRE/GDRFA (or the free-zone authority) and verifies the residence visa, Emirates ID and passport before start.","owner":"Employer/sponsor (HR).","storer":"Employer — work permit, residence visa, Emirates ID and passport copies in the personnel file.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / residence visa expires (typically every 1–3 years); renew before expiry.","sources":"https://www.mohre.gov.ae https://gdrfad.gov.ae"},
+{"name":"Egypt","region":"Middle East","summary":"Foreign nationals need a work permit from the Ministry of Manpower plus a work-purpose residence visa before working; the employer sponsors and faces a foreign-to-Egyptian staff ratio (commonly up to 10%). Working without a permit is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit and verifies the residence visa and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, visa and passport copies in the personnel file.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / residence visa expires (typically annual); renew before expiry.","sources":"https://www.manpower.gov.eg https://www.google.com/search?q=Egypt+work+permit+employer+requirements"},
+{"name":"Ethiopia","region":"Africa","summary":"Foreign nationals need a work permit from the Ministry of Labour and Skills plus a work/residence visa before working; the employer sponsors and must demonstrate skills transfer to local understudies. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit and verifies the visa/residence ID and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, visa and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / visa expires (typically annual); renew before expiry.","sources":"https://www.mols.gov.et https://www.eis.gov.et"},
+{"name":"Georgia","region":"Eurasia & Eastern Europe","summary":"Georgia has a relatively open regime: many nationalities can enter visa-free and work, but employers must register labour-migration data and, for longer stays, the worker needs an appropriate residence permit/visa. Verify current labour-migration registration duties. No formal nationals' RTW-check regime.","day1":"Conditional","how":"Documentary, in person. Employer verifies the worker's lawful status/residence and passport before start; labour-migration reporting may apply. No employer eligibility-check portal.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — status/residence and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before any residence permit/visa expires.","sources":"https://www.geoconsul.gov.ge https://www.google.com/search?q=Georgia+labour+migration+work+requirements"},
+{"name":"Ghana","region":"Africa","summary":"Foreign nationals need a work/residence permit and an immigrant quota (or GIPC/free-zone automatic quota) before working; the employer sponsors. Working without authorisation is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work and residence permits (Ghana Immigration Service) under its quota and verifies the permit and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence permit and passport copies in the personnel file.","storage":"Company/labour records commonly retained ~6 years; immigration copies for the engagement.","recert":"Re-verify before the work and residence permits expire (typically annual); renew before expiry.","sources":"https://www.gis.gov.gh https://www.gipc.gov.gh"},
+{"name":"Ivory Coast","region":"Africa","summary":"Côte d'Ivoire: foreign employees need a work contract stamped/approved by the labour authority and a residence permit (carte de séjour) before working; the employer sponsors. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer has the foreign employment contract approved (Agence Emploi Jeunes/labour authority) and verifies the residence permit and passport before start.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — approved contract, residence permit and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the residence permit / contract approval expires.","sources":"https://www.interieur.gouv.ci https://www.google.com/search?q=Cote+d%27Ivoire+work+permit+carte+de+sejour+employer"},
+{"name":"Jordan","region":"Middle East","summary":"Foreign nationals need a work permit from the Ministry of Labour plus a residence permit before working; the employer sponsors, pays fees and faces closed/quota occupations. Working without a permit is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit and verifies the residence permit and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Renew the work and residence permits annually before expiry.","sources":"https://www.mol.gov.jo https://www.google.com/search?q=Jordan+work+permit+employer+requirements"},
+{"name":"Kazakhstan","region":"Eurasia & Eastern Europe","summary":"Foreign nationals (non-EAEU) generally need a work-permit/quota authorisation obtained by the employer plus a work-purpose visa before working. EAEU nationals (Russia, Belarus, Armenia, Kyrgyzstan) are largely exempt but employment must be registered. No nationals' RTW-check regime.","day1":"Conditional","how":"Documentary + application. Employer obtains the work permit (within quota) and verifies the visa and passport before start; EAEU nationals exempt but registered. ","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — permit, visa and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / visa expires; renew within quota.","sources":"https://www.gov.kz https://www.google.com/search?q=Kazakhstan+work+permit+employer+requirements"},
+{"name":"Kenya","region":"Africa","summary":"Foreign nationals need a work permit (e.g. Class D for employment) or a special pass from the Directorate of Immigration Services before working; the employer sponsors and must show the role cannot be filled locally. Working without a permit is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer applies via the eFNS/immigration portal and verifies the work permit/special pass and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit expires (typically valid 2 years); renew before expiry.","sources":"https://immigration.go.ke https://fns.immigration.go.ke"},
+{"name":"Lebanon","region":"Middle East","summary":"Foreign nationals need a work permit from the Ministry of Labour plus a residence permit (General Security) before working; the employer sponsors and provides a bank guarantee for certain categories. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit and verifies the residence permit and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Renew the work and residence permits annually before expiry.","sources":"https://www.labor.gov.lb https://www.general-security.gov.lb"},
+{"name":"Morocco","region":"Africa","summary":"Foreign employees need an employment contract approved/visaed by the labour authority (ANAPEC attestation that no local candidate is available, except exempt categories) and a residence card before working; the employer sponsors. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the visaed foreign-worker contract and verifies the residence card and passport before start (TECEtranger online for contract visa).","owner":"Employer (HR) — the hiring entity.","storer":"Employer — visaed contract, residence card and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the contract visa / residence card expires; renew before expiry.","sources":"https://www.emploi.gov.ma https://www.google.com/search?q=Morocco+foreign+worker+contract+visa+ANAPEC"},
+{"name":"Nigeria","region":"Africa","summary":"Foreign nationals need an Expatriate Quota approval (for the employer) plus a CERPAC (Combined Expatriate Residence Permit and Aliens Card) and work visa (STR) before working. Employers file quota returns to the Nigeria Immigration Service. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer secures the expatriate quota, the worker obtains the STR visa and CERPAC, and the employer verifies the CERPAC and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — quota approval, CERPAC and passport copies; files quota returns.","storage":"Company/labour records commonly retained ~6 years; immigration copies for the engagement.","recert":"Renew CERPAC annually before expiry; maintain the expatriate quota position.","sources":"https://immigration.gov.ng https://portal.immigration.gov.ng"},
+{"name":"Qatar","region":"Middle East","summary":"Sponsorship-based system. Foreign nationals need an employer-sponsored work residence permit (and work visa) issued by MOI/ADLSA before working; recent reforms eased job changes but the employer remains responsible. Working outside the sponsor without authorisation is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer (sponsor) processes the work visa and residence permit (Metrash/MOI, ADLSA) and verifies the QID/residence permit and passport before start.","owner":"Employer/sponsor (HR).","storer":"Employer — work visa, residence permit, QID and passport copies in the personnel file.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the residence permit / QID expires; renew before expiry.","sources":"https://portal.moi.gov.qa https://www.adlsa.gov.qa"},
+{"name":"Rwanda","region":"Africa","summary":"Rwanda operates a relatively streamlined online system: foreign nationals need a work permit/visa class appropriate to employment before working; the employer or worker applies via the Irembo/immigration portal. EAC nationals have eased access. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Application via the Directorate General of Immigration & Emigration online portal; employer verifies the work permit/residence and passport before start.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — work permit/residence and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / residence expires; renew before expiry.","sources":"https://www.migration.gov.rw https://irembo.gov.rw"},
+{"name":"Saudi Arabia","region":"Middle East","summary":"Sponsorship-based system. Foreign nationals need an employer block-visa/work visa, a work permit (Qiwa/HRSD) and an Iqama (residence permit) before working; Saudization (Nitaqat) quotas apply. Working outside the sponsor/role is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer processes the work visa, work permit and Iqama via Qiwa/Absher/Muqeem and verifies the Iqama and passport before start.","owner":"Employer/sponsor (HR).","storer":"Employer — work permit, Iqama and passport copies; data in Qiwa/Muqeem.","storage":"Labour/company records commonly retained several years; immigration copies for the engagement.","recert":"Renew the work permit and Iqama annually before expiry.","sources":"https://www.hrsd.gov.sa https://qiwa.sa"},
+{"name":"Serbia","region":"Eurasia & Eastern Europe","summary":"Foreign nationals need a single permit combining temporary residence and work, issued by the Ministry of Interior / National Employment Service, before working; the employer typically initiates. Working without it is an offence. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Application via the unified e-portal for the single permit; employer verifies the single permit and passport before start.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — single permit and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the single permit expires; renew before expiry.","sources":"https://welcometoserbia.gov.rs https://www.mup.gov.rs"},
+{"name":"South Africa","region":"Africa","summary":"Foreign nationals need a valid work visa (e.g. General Work, Critical Skills, Intra-Company Transfer) or permit before working; the employer must satisfy itself the worker is authorised. Employing an illegal foreigner is an offence under the Immigration Act, with a due-diligence (good-faith) duty on the employer.","day1":"Yes","how":"Documentary, in person. Verify the work visa/permit and passport before start and keep copies; for citizens/PRs, the green ID/PR certificate. Department of Home Affairs / VFS handle applications.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — work visa/permit and passport copies in the personnel file.","storage":"Employment records under the BCEA generally kept 3 years; immigration copies for the engagement.","recert":"Re-verify before the work visa/permit expires; renew before expiry.","sources":"https://www.dha.gov.za https://www.vfsglobal.com"},
+{"name":"Tanzania","region":"Africa","summary":"Foreign nationals need a work permit (Ministry of Labour, Classes A–D) plus a residence permit (Immigration) before working; the employer sponsors and faces succession/Tanzanisation requirements. Working without permits is an offence. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer applies for the work permit (OSHA/labour online) and residence permit and verifies them with the passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence permit and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Renew the work and residence permits before expiry (typically annual, up to set maximums).","sources":"https://www.kazi.go.tz https://www.immigration.go.tz"},
+{"name":"Ukraine","region":"Eurasia & Eastern Europe","summary":"Foreign nationals need an employment permit obtained by the employer from the State Employment Service plus a temporary-residence permit before working; salary thresholds apply. Martial-law measures may affect processing — verify current rules. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the employment permit and verifies the temporary-residence permit and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — employment permit, residence and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the employment permit / residence permit expires (typically 1–3 years); renew before expiry.","sources":"https://www.dcz.gov.ua https://dmsu.gov.ua"},
+{"name":"Uzbekistan","region":"Eurasia & Eastern Europe","summary":"Foreign nationals generally need a work permit (confirmation) obtained by the employer from the Agency for External Labour Migration plus a work visa/temporary residence before working, within quota. No nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the employer permit and the worker's individual confirmation, then verifies the visa and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — permit/confirmation, visa and passport copies in the personnel file.","storage":"Company/labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work permit / visa expires (typically annual); renew before expiry.","sources":"https://migration.uz https://www.google.com/search?q=Uzbekistan+work+permit+employer+requirements"},
+{"name":"Argentina","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence (temporary or transitory work) authorisation from the Dirección Nacional de Migraciones before working; employers should be registered in RENURE to sponsor foreign workers. Mercosur nationals have eased residence. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online (RaDEX). Employer (registered in RENURE) sponsors via the RaDEX system; verifies the residence precaria/DNI and passport before start.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — residence authorisation and passport copies in the personnel file.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the temporary residence expires; renew before expiry.","sources":"https://www.argentina.gob.ar/interior/migraciones https://www.google.com/search?q=Argentina+RENURE+work+residence+employer"},
+{"name":"Brazil","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence authorisation for work (prior authorisation via the Ministry of Justice/Labour) and a work visa (VITEM) before working; the employer sponsors. The worker registers (CRNM) and obtains a CPF/work card (CTPS). No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the prior residence/work authorisation, the worker gets the VITEM visa and CRNM; employer verifies the CRNM and passport before start and registers via eSocial.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — authorisation, CRNM and passport copies; eSocial records.","storage":"Labour records (e.g. eSocial/FGTS) commonly retained up to 5–30 years depending on type; immigration copies for the engagement.","recert":"Re-verify before the residence authorisation / visa expires; renew before expiry.","sources":"https://www.gov.br/mj https://www.gov.br/trabalho-e-emprego"},
+{"name":"Chile","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence permit/visa that authorises work before working; recent law channels most work through temporary-residence visas processed by the Servicio Nacional de Migraciones. Employers must verify authorisation and register the contract. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + online. Employer verifies the residence visa/permit (and RUT) and passport before start; applications via the SERMIG online platform. ","owner":"Employer (HR) — the hiring entity.","storer":"Employer — residence visa/permit and passport copies in the personnel file.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the residence visa/permit expires; renew before expiry.","sources":"https://serviciomigraciones.cl https://www.google.com/search?q=Chile+work+residence+visa+employer+requirements"},
+{"name":"Costa Rica","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence/work authorisation from the Dirección General de Migración y Extranjería before working; categories include work-permitted temporary residence. Employers should verify authorisation and register with the CCSS. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer verifies the DIMEX residence card (work-permitted) and passport before start and registers the worker with the CCSS (social security).","owner":"Employer (HR) — the hiring entity.","storer":"Employer — DIMEX/residence and passport copies in the personnel file.","storage":"Labour records commonly retained ~4 years; immigration copies for the engagement.","recert":"Re-verify before the residence/work authorisation expires; renew before expiry.","sources":"https://www.migracion.go.cr https://www.ccss.sa.cr"},
+{"name":"Dominican Republic","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence with work authorisation (and a work visa) from the Dirección General de Migración / Ministry of Foreign Affairs before working; the employer sponsors. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer verifies the residence/work authorisation and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — residence/work authorisation and passport copies in the personnel file.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the residence/work authorisation expires (typically annual); renew before expiry.","sources":"https://www.migracion.gob.do https://www.google.com/search?q=Dominican+Republic+work+residence+visa+employer"},
+{"name":"Ecuador","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence visa that authorises work (temporary residence or work visa) from the Ministry of Foreign Affairs/Human Mobility before working; the employer should verify and register the worker with the IESS. Mercosur/UNASUR access eased. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer verifies the residence visa and cédula and passport before start and registers with the IESS (social security).","owner":"Employer (HR) — the hiring entity.","storer":"Employer — visa, cédula and passport copies in the personnel file.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the residence visa expires; renew before expiry.","sources":"https://www.cancilleria.gob.ec https://www.iess.gob.ec"},
+{"name":"Guatemala","region":"Latin America & Caribbean","summary":"Foreign nationals need a work permit from the Ministry of Labour plus a residence status from the Instituto Guatemalteco de Migración before working; the employer sponsors. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit and verifies the residence status and passport before start. No employer eligibility-check portal.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence and passport copies in the personnel file.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Renew the work permit and residence before expiry (typically annual).","sources":"https://www.mintrabajo.gob.gt https://igm.gob.gt"},
+{"name":"Mexico","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence permit with permission to work (usually temporary residence with a work offer) issued by the INM before working; the employer must hold an INM 'Constancia de Empleador' to sponsor work offers. Working without authorisation is unlawful. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Registered employer files a job-offer petition with INM; the worker obtains the residence card permitting work; employer verifies the residence card (with work permission) and passport before start and reports to INM.","owner":"Employer (HR) — the registered sponsoring entity.","storer":"Employer — residence card and passport copies in the personnel file; INM notices.","storage":"Labour records commonly retained ~5 years; immigration copies for the engagement.","recert":"Re-verify before the residence card expires; report changes (e.g. address, separation) to INM.","sources":"https://www.gob.mx/inm https://www.gob.mx/stps"},
+{"name":"Panama","region":"Latin America & Caribbean","summary":"Foreign nationals need a work permit from the Ministry of Labour (MITRADEL) plus a residence permit from the Servicio Nacional de Migración before working; quota rules (e.g. 10%/15% of workforce) and special regimes (e.g. multinational HQ) apply. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer obtains the work permit (MITRADEL) and the worker the residence permit; employer verifies the work permit, residence and passport before start.","owner":"Employer (HR) — the sponsoring entity.","storer":"Employer — work permit, residence and passport copies in the personnel file.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Renew the work and residence permits before expiry (typically annual).","sources":"https://www.mitradel.gob.pa https://www.migracion.gob.pa"},
+{"name":"Peru","region":"Latin America & Caribbean","summary":"Foreign nationals need a residence/work-permitting migratory status (e.g. worker visa/residence) and an approved foreign-worker employment contract (Ministry of Labour) before working; foreign-staff percentage and salary caps apply. No formal nationals' RTW-check regime.","day1":"Yes","how":"Documentary + application. Employer registers the foreign-worker contract with the Ministry of Labour and verifies the carné de extranjería (work-permitting) and passport before start; immigration via Migraciones.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — approved contract, carné and passport copies in the personnel file.","storage":"Labour records commonly retained ~5 years; immigration copies for the engagement.","recert":"Re-verify before the residence/carné expires and on contract renewal; renew before expiry.","sources":"https://www.gob.pe/migraciones https://www.gob.pe/mtpe"},
+{"name":"Venezuela","region":"Latin America & Caribbean","summary":"Foreign nationals need a work-authorising visa (e.g. TR-L laboral) from the Ministry of Foreign Affairs/SAIME before working; the employer sponsors. Regulatory practice is fluid — verify current requirements. No formal nationals' RTW-check regime.","day1":"Conditional","how":"Documentary + application. Employer verifies the work visa/residence and passport before start. No employer eligibility-check portal; processes via SAIME can vary.","owner":"Employer (HR) — the hiring entity.","storer":"Employer — visa/residence and passport copies in the personnel file.","storage":"Labour records commonly retained several years; immigration copies for the engagement.","recert":"Re-verify before the work visa/residence expires; renew before expiry.","sources":"http://www.saime.gob.ve https://www.google.com/search?q=Venezuela+work+visa+TR-L+employer+requirements"}
+]}
+</script>
+
+<script>
+"use strict";
+
+/* ---------- Column definitions ---------- */
+var COLS = [
+  {key:"name",    label:"Country",                  type:"name"},
+  {key:"region",  label:"Region",                   type:"short"},
+  {key:"summary", label:"Summary of Requirements",  type:"long"},
+  {key:"day1",    label:"Day 1 Check (Yes/No)",     type:"day1"},
+  {key:"how",     label:"How check must be done (in person / virtual / hybrid)", type:"long"},
+  {key:"owner",   label:"Who owns the RTW data",    type:"long"},
+  {key:"storer",  label:"Who must store the data",  type:"long"},
+  {key:"storage", label:"Storage duration",         type:"long"},
+  {key:"recert",  label:"Recertification timeline", type:"long"},
+  {key:"sources", label:"Sources (official portal & references)", type:"links"}
+];
+
+var STORE_KEY = "rtwDashboardState_v1";
+var state = {updated:"", countries:[]};
+var editMode = false;
+var sortKey = "name";
+var sortDir = 1; // 1 asc, -1 desc
+
+/* ---------- Load: localStorage first, else embedded JSON ---------- */
+function loadState(){
+  var fromLS = null;
+  try { fromLS = localStorage.getItem(STORE_KEY); } catch(e){ fromLS = null; }
+  if(fromLS){
+    try { return JSON.parse(fromLS); } catch(e){ /* fall through */ }
+  }
+  var embedded = JSON.parse(document.getElementById("rtw-data").textContent);
+  return embedded;
+}
+
+function persist(){
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){ /* storage may be unavailable on file:// */ }
+}
+
+function touchUpdated(){
+  var d = new Date();
+  state.updated = d.toISOString().slice(0,10) + " " + d.toTimeString().slice(0,5);
+  document.getElementById("meta-updated").textContent = state.updated;
+}
+
+/* ---------- Helpers ---------- */
+function esc(s){
+  return String(s==null?"":s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
+function uniqueRegions(){
+  var set = {};
+  state.countries.forEach(function(c){ if(c.region) set[c.region]=true; });
+  return Object.keys(set).sort();
+}
+
+/* ---------- Build header & region filter ---------- */
+function buildHead(){
+  var tr = document.getElementById("head");
+  var html = COLS.map(function(c){
+    var arrow = (sortKey===c.key) ? (' <span class="arrow">'+(sortDir===1?"▲":"▼")+'</span>') : '';
+    var cls = (c.key==="name") ? ' class="col-country"' : '';
+    return '<th'+cls+' onclick="setSort(\''+c.key+'\')">'+esc(c.label)+arrow+'</th>';
+  }).join("");
+  if(editMode){ html += '<th class="delcol">✕</th>'; }
+  tr.innerHTML = html;
+}
+function buildRegionFilter(){
+  var sel = document.getElementById("regionFilter");
+  var current = sel.value;
+  var opts = ['<option value="">All regions</option>'];
+  uniqueRegions().forEach(function(r){ opts.push('<option value="'+esc(r)+'">'+esc(r)+'</option>'); });
+  sel.innerHTML = opts.join("");
+  sel.value = current;
+}
+
+function setSort(key){
+  if(sortKey===key){ sortDir = -sortDir; } else { sortKey = key; sortDir = 1; }
+  buildHead();
+  render();
+}
+
+/* ---------- Filtering + sorting ---------- */
+function visibleRows(){
+  var q = document.getElementById("search").value.trim().toLowerCase();
+  var region = document.getElementById("regionFilter").value;
+  var day1f = document.getElementById("day1Filter").value;
+
+  var rows = state.countries.filter(function(c){
+    if(region && c.region!==region) return false;
+    if(day1f){
+      if(day1f==="__empty"){ if(c.day1) return false; }
+      else if(c.day1!==day1f) return false;
+    }
+    if(q){
+      var hay = [c.name,c.region,c.summary,c.day1,c.how,c.owner,c.storer,c.storage,c.recert].join(" ").toLowerCase();
+      if(hay.indexOf(q)===-1) return false;
+    }
+    return true;
+  });
+
+  rows.sort(function(a,b){
+    var x=(a[sortKey]||"").toString().toLowerCase();
+    var y=(b[sortKey]||"").toString().toLowerCase();
+    if(x<y) return -1*sortDir;
+    if(x>y) return  1*sortDir;
+    return 0;
+  });
+  return rows;
+}
+
+/* ---------- Cell renderers ---------- */
+function viewCell(c, col){
+  var v = c[col.key];
+  if(col.type==="name"){
+    return '<td class="col-country"><strong>'+esc(v||"(unnamed)")+'</strong><br><span class="region-pill">'+esc(c.region||"—")+'</span></td>';
+  }
+  if(col.type==="day1"){
+    var cls = (v==="Yes"||v==="No") ? v : "empty";
+    var txt = v ? v : "not set";
+    return '<td><span class="day1 '+cls+'">'+esc(txt)+'</span></td>';
+  }
+  if(col.type==="links"){
+    if(!v){ return '<td><span class="empty-cell">—</span></td>'; }
+    var parts = String(v).split(/[\s,]+/).filter(function(u){ return u; });
+    var links = parts.map(function(u){
+      var href = /^https?:\/\//i.test(u) ? u : ("https://"+u);
+      var label = u.replace(/^https?:\/\//i,"").replace(/\/$/,"");
+      if(label.length>42){ label = label.slice(0,40)+"…"; }
+      return '<a class="srclink" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+esc(label)+'</a>';
+    }).join("");
+    return '<td><div class="srcwrap">'+links+'</div></td>';
+  }
+  if(!v){ return '<td><span class="empty-cell">—</span></td>'; }
+  return '<td>'+esc(v).replace(/\n/g,"<br>")+'</td>';
+}
+
+function editCell(c, col){
+  var id = c.__id;
+  var v = c[col.key]==null ? "" : c[col.key];
+  if(col.type==="name"){
+    return '<td class="col-country"><input class="cell" data-id="'+id+'" data-field="name" value="'+esc(v)+'"></td>';
+  }
+  if(col.key==="region"){
+    return '<td><input class="cell" data-id="'+id+'" data-field="region" value="'+esc(v)+'"></td>';
+  }
+  if(col.type==="day1"){
+    function o(val){ return '<option value="'+val+'"'+(v===val?' selected':'')+'>'+(val||"not set")+'</option>'; }
+    return '<td><select class="cell" data-id="'+id+'" data-field="day1">'+o("")+o("Yes")+o("No")+'</select></td>';
+  }
+  return '<td><textarea data-id="'+id+'" data-field="'+col.key+'">'+esc(v)+'</textarea></td>';
+}
+
+/* ---------- Render ---------- */
+function render(){
+  var rows = visibleRows();
+  var body = document.getElementById("body");
+  var html = rows.map(function(c){
+    var cells = COLS.map(function(col){
+      return editMode ? editCell(c,col) : viewCell(c,col);
+    }).join("");
+    if(editMode){
+      cells += '<td class="delcol"><button class="delbtn" title="Delete country" onclick="delCountry(\''+c.__id+'\')">✕</button></td>';
+    }
+    return '<tr>'+cells+'</tr>';
+  }).join("");
+  body.innerHTML = html || '<tr><td colspan="'+(COLS.length+1)+'" style="padding:24px;text-align:center;color:#94a3b8">No countries match your filters.</td></tr>';
+
+  document.getElementById("count").textContent = rows.length;
+  renderStats();
+
+  if(editMode){ wireInputs(); }
+}
+
+function renderStats(){
+  var total = state.countries.length;
+  var yes=0,no=0,filled=0;
+  state.countries.forEach(function(c){
+    if(c.day1==="Yes") yes++;
+    if(c.day1==="No") no++;
+    if(c.summary||c.how||c.owner||c.storer||c.storage||c.recert||c.day1) filled++;
+  });
+  var regions = uniqueRegions().length;
+  var s = document.getElementById("stats");
+  s.innerHTML =
+    stat(total,"Countries") +
+    stat(regions,"Regions") +
+    stat(filled,"Rows with data") +
+    stat(yes,"Day 1: Yes") +
+    stat(no,"Day 1: No");
+}
+function stat(n,l){ return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div></div>'; }
+
+/* ---------- Live two-way binding in edit mode ---------- */
+function wireInputs(){
+  var els = document.querySelectorAll("#body [data-id]");
+  els.forEach(function(el){
+    el.addEventListener("input", function(){
+      var id = el.getAttribute("data-id");
+      var field = el.getAttribute("data-field");
+      var c = findById(id);
+      if(!c) return;
+      c[field] = el.value;
+      touchUpdated();
+      persistDebounced();
+      if(field==="day1"){ renderStats(); }
+      if(field==="region"){ buildRegionFilter(); }
+    });
+  });
+}
+var _t=null;
+function persistDebounced(){ clearTimeout(_t); _t=setTimeout(persist,400); }
+
+function findById(id){
+  for(var i=0;i<state.countries.length;i++){ if(state.countries[i].__id===id) return state.countries[i]; }
+  return null;
+}
+
+/* ---------- Actions ---------- */
+function toggleEdit(){
+  // commit any focused field
+  if(editMode){ persist(); }
+  editMode = !editMode;
+  document.body.classList.toggle("editing", editMode);
+  var btn = document.getElementById("editToggle");
+  if(editMode){ btn.textContent = "✓ Done Editing"; btn.classList.add("active"); btn.classList.remove("primary"); }
+  else { btn.textContent = "✎ Update Requirements"; btn.classList.remove("active"); btn.classList.add("primary"); }
+  buildHead();
+  render();
+}
+
+function addCountry(){
+  if(!editMode){ toggleEdit(); }
+  var c = {name:"New country",region:"",summary:"",day1:"",how:"",owner:"",storer:"",storage:"",recert:""};
+  c.__id = "id_"+Date.now()+"_"+Math.floor(Math.random()*1e4);
+  state.countries.unshift(c);
+  touchUpdated(); persist(); render();
+}
+
+function delCountry(id){
+  var c = findById(id);
+  if(!c) return;
+  if(!confirm("Delete \""+(c.name||"this country")+"\" from the dashboard?")) return;
+  state.countries = state.countries.filter(function(x){ return x.__id!==id; });
+  touchUpdated(); persist(); render();
+}
+
+function resetAll(){
+  if(!confirm("Reset the dashboard? This clears all data you have entered in THIS browser and restores the blank template that came with the file.")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch(e){}
+  state = JSON.parse(document.getElementById("rtw-data").textContent);
+  ensureIds();
+  document.getElementById("meta-updated").textContent = state.updated || "not yet updated";
+  buildRegionFilter(); render();
+}
+
+/* ---------- Export: CSV ---------- */
+function csvCell(s){
+  s = (s==null)?"":String(s);
+  if(/[",\n]/.test(s)){ s = '"'+s.replace(/"/g,'""')+'"'; }
+  return s;
+}
+function exportCSV(){
+  var headers = COLS.map(function(c){ return c.label; });
+  var lines = [headers.map(csvCell).join(",")];
+  state.countries.forEach(function(c){
+    lines.push(COLS.map(function(col){ return csvCell(c[col.key]); }).join(","));
+  });
+  var csv = "﻿" + lines.join("\r\n"); // BOM for Excel
+  downloadBlob(csv, "RTW-Requirements.csv", "text/csv;charset=utf-8");
+}
+
+/* ---------- Export: self-contained HTML (bakes data into the file) ---------- */
+function downloadDashboard(){
+  // Strip internal ids before serialising
+  var clean = {updated: state.updated, countries: state.countries.map(function(c){
+    return {name:c.name,region:c.region,summary:c.summary,day1:c.day1,how:c.how,
+            owner:c.owner,storer:c.storer,storage:c.storage,recert:c.recert,sources:c.sources||""};
+  })};
+  var dataScript = document.getElementById("rtw-data");
+  var prev = dataScript.textContent;
+  dataScript.textContent = JSON.stringify(clean, null, 0);
+  document.getElementById("meta-updated").textContent = state.updated || "not yet updated";
+
+  // Render in clean (view) state so the saved file opens tidy
+  var bodyEl = document.getElementById("body");
+  var savedBody = bodyEl.innerHTML;
+  var savedEditing = document.body.classList.contains("editing");
+  document.body.classList.remove("editing");
+  bodyEl.innerHTML = ""; // JS rebuilds on load anyway
+
+  var html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+
+  // restore live page
+  bodyEl.innerHTML = savedBody;
+  if(savedEditing){ document.body.classList.add("editing"); }
+  dataScript.textContent = prev;
+
+  downloadBlob(html, "RTW-Dashboard.html", "text/html;charset=utf-8");
+}
+
+function downloadBlob(content, filename, mime){
+  var blob = new Blob([content], {type:mime});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+/* ---------- Init ---------- */
+function ensureIds(){
+  state.countries.forEach(function(c,i){
+    if(!c.__id){ c.__id = "id_"+i+"_"+Math.floor(Math.random()*1e6); }
+  });
+}
+function init(){
+  state = loadState();
+  if(!state || !state.countries){ state = {updated:"", countries:[]}; }
+  ensureIds();
+  document.getElementById("meta-updated").textContent = state.updated || "not yet updated";
+  buildHead();
+  buildRegionFilter();
+  render();
+}
+init();
+</script>
+</body>
+</html>
